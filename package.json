@@ -1,0 +1,32 @@
+{
+  "name": "@digitalprimates/packing-tape",
+  "version": "0.0.1",
+  "description": "Simplified workspace for project dependencies living in multiple git repositories",
+  "main": "index.js",
+  "bin": {
+    "packing-tape": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DigitalPrimates/packing-tape.git"
+  },
+  "keywords": [
+    "workspace",
+    "npm",
+    "javascript",
+    "polyrepo"
+  ],
+  "author": "Michael Labriola <labriola@digitalprimates.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DigitalPrimates/packing-tape/issues"
+  },
+  "homepage": "https://github.com/DigitalPrimates/packing-tape#readme",
+  "dependencies": {
+    "minimist": "^1.2.0",
+    "semver-intersect": "^1.4.0"
+  }
+}
