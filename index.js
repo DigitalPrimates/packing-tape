@@ -5,10 +5,10 @@ const child_process = require('child_process');
 const {
   intersect
 } = require('semver-intersect');
-
 const minimist = require('minimist');
 
 const isObjectLike = x => typeof x === 'object' && x !== null;
+
 const filter = (o, p, keySelector=Object.keys) => {
   const p2 = k => p(o[k], k, o);
   const keys = keySelector(o).filter(p2);
@@ -17,12 +17,6 @@ const filter = (o, p, keySelector=Object.keys) => {
       return acc;
   }
   return keys.reduce(r,{});
-};
-
-const reduce = (o, f = identity, acc = {}, iteratee=Object.keys) => {
-  const f2 = (acc, k) => f(acc, o[k], k, o);
-  return iteratee(o)
-          .reduce(f2, acc);
 };
 
 const toSatisfiedDependency = (dependency, v1, v2) => {
@@ -42,6 +36,7 @@ const localProjectFilter = links =>
     .reduce((accFn, fn)=>dependency=>fn(dependency) && accFn(dependency), ()=>true);
 
 const validateWorkspace = ignoreFilter => workspace => {
+  
   if ((isObjectLike(workspace) || isObjectLike(workspace.links))) {
     const {
       links
@@ -68,54 +63,41 @@ const validateWorkspace = ignoreFilter => workspace => {
   return true;
 };
 
-const toWorkspaceDependencies = ignoreFilter => links => {
-    return Object
-      .keys(links)
-      .map(key=>links[key])
-      .filter(ignoreFilter)
-      .map(dir=>path.resolve(dir, 'package.json'))
-      .map(file=>String(fs.readFileSync(file)))
-      .map(json=>JSON.parse(json))
-      .map(({devDependencies, dependencies})=>Object.assign({}, devDependencies, dependencies))
-      .reduce((acc, projectDeps)=>{
-        return Object
-            .keys(projectDeps)
-            .filter(localProjectFilter(links))
-            .reduce((innerAcc, dependency)=>{
-            
-              return (!innerAcc[dependency] || innerAcc[dependency] === projectDeps[dependency])
-                          ? Object.assign(innerAcc, {[dependency]:projectDeps[dependency]})
-                          : Object.assign(innerAcc, toSatisfiedDependency(dependency, innerAcc[dependency], projectDeps[dependency]));
-            }, acc);
-      }, {});
-};
-const installHoistedDependencies = dependencies => {
-  //NPM with the no-save options seems to have a race condition that missed multiple dependencies
-  //therefore we are enforcing a limited mutation strategy by restoring package.json
-  const workspacePackage = String(fs.readFileSync(path.resolve('package.json')));
-  try {
-    reduce(dependencies, (acc, version, dep)=>{
-      const [
-        head = `npm i `,
-        ...rest
-      ] = acc;
+var toDependenciesGenerator = links => (accDependencies, projectDependencies) => {
+  
+  return Object
+  .keys(projectDependencies)
+  .filter(localProjectFilter(links))
+  .reduce((innerAcc, dependency)=>{
+    
+    return (!innerAcc[dependency] || innerAcc[dependency] === projectDependencies[dependency])
+                ? Object.assign(innerAcc, {[dependency]:projectDependencies[dependency]})
+                : Object.assign(innerAcc, toSatisfiedDependency(dependency, innerAcc[dependency], projectDependencies[dependency]));
+  }, accDependencies);
 
-      return (head.length < 512)
-                ?  [`${head} ${dep}@${version}`, ...rest]
-                :  [`npm i ${dep}@${version}`, head, ...rest]
-    }, [])
-    .forEach(line=>{
-      console.log(line);
-      child_process.execSync(line);
-    });
-  }
-  catch (e) {
-    console.log(e);
-    throw new Error('Unknown Error in package installation');
-  }
-  finally {
-    fs.writeFileSync(path.resolve('package.json'), workspacePackage);
-  }
+}
+
+const toCompleteWorkspaceDependencies = ignoreFilter => packageDir => {
+    
+  var dependenciesGenerator = toDependenciesGenerator(packageDir);
+
+  return Object
+    .keys(packageDir)
+    .map(key=>packageDir[key])
+    .filter(ignoreFilter)
+    .map(dir=>path.resolve(dir, 'package.json'))
+    .map(file=>String(fs.readFileSync(file)))
+    .map(json=>JSON.parse(json))
+    .map( ({devDependencies, dependencies} ) => ({devDependencies, dependencies}))
+    .reduce(({devDependencies={}, dependencies={}}, {devDependencies: projDevDependencies, dependencies:projDependencies})=>{
+
+        return {
+          devDependencies: dependenciesGenerator(devDependencies, projDevDependencies),
+          dependencies: dependenciesGenerator(dependencies, projDependencies)
+        }
+
+    }, {});
+
 };
 
 const createProjectSymLinks = ignoreFilter => links => {
@@ -151,7 +133,55 @@ const createProjectSymLinks = ignoreFilter => links => {
       });
 };
 
+const getFilePath = (pathArg, fileName = '') => {
 
+  if (!fs.existsSync(pathArg)) {
+    console.log(`${fileName} file not found at ${pathArg}`);
+    process.exit(-1);
+  }
+
+  return path.resolve(pathArg);
+
+}
+
+const parseWorkspaceFile = (workspaceStr, ignoreFilter=()=>true) => {
+  
+  let workspace;
+  try {
+    workspace = JSON.parse(workspaceStr);
+    validateWorkspace(ignoreFilter)(workspace);  
+  }
+  catch (e) {
+    console.log(`Workspace file at ${workspacePath} does not contain a valid workspace description\n${e.message}`);
+    process.exit(-1);
+  }
+
+  return workspace;
+  
+};
+
+const readFile = (filePath) => {
+  try {
+    return fs.readFileSync(filePath)
+  }
+  catch (e) {
+    console.log(`unable to read ${filePath}\n${e.message}`);
+    process.exit(-1);
+  }
+  
+}
+
+const writeToFile = (path, value) => {
+  
+  try{
+    fs.writeFileSync(workspacePackage, value);
+  }
+  catch(e) {
+    console.log(`Unable to write to ${path}\n${e.message}`);
+    process.exit(-1);
+  }
+
+}
 
 const argv = minimist(process.argv.slice(2));
 
@@ -162,32 +192,30 @@ if (argv.h || argv.help) {
 
 const workspaceArg = argv.w || argv.workspace || 'workspace.json';
 const ignoreArg = argv.i || argv.ignore || '';
-
-const workspacePath = path.resolve(workspaceArg);
 const ignoreFilter = package => !ignoreArg.split(',').includes(package);
+const workspacePath = getFilePath(workspaceArg, 'Workspace');
+const workspacePackage = getFilePath('package.json', 'Workspace package.json');
 
-if (!fs.existsSync(workspacePath)) {
-  console.log(`Workspace file not found at ${workspacePath}`);
-  process.exit(-1);
-}
-
-let workspace;
-try {
-  const workspaceStr = String(fs.readFileSync(workspacePath));
-  workspace = JSON.parse(workspaceStr);
-  validateWorkspace(ignoreFilter)(workspace);  
-}
-catch (e) {
-  console.log(`Workspace file at ${workspacePath} does not contain a valid workspace description\n${e.message}`);
-  process.exit(-1);
-}
-
+//1. Aggregate all workspace and subproject dependencies / devDependencies and return an object containing these
+// dependencies / devDependencies.  The sub projects will not appear as dependencies in this object.
 const {
   links = {}
-} = workspace;
+} = parseWorkspaceFile(readFile(workspacePath), ignoreFilter);
 
-const dependencies = toWorkspaceDependencies(ignoreFilter)(links);
-installHoistedDependencies(dependencies);
+const dependencies = toCompleteWorkspaceDependencies(ignoreFilter)(
+  Object.assign({}, links, {['./']: './'})
+);
+
+//2. Replace the workspace's package.json dependencies / devDependencies with the newly generated 
+// dependencies / devDependencies
+const workspacePackageJSON = JSON.parse(readFile(workspacePackage));
+const overridePackageJSON = Object.assign({}, workspacePackageJSON, dependencies);
+writeToFile(workspacePackage, JSON.stringify(overridePackageJSON, null, 4))
+
+//3. Install the dependencies listed in the package.json
+child_process.execSync('npm i');
+
+//4. Create sym links to the sub projects in node_modules.
 createProjectSymLinks(ignoreFilter)(links);
 
-console.log('Installation Finished')
+console.log('Installation Finished');
