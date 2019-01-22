@@ -72,7 +72,7 @@ var toDependenciesGenerator = links => (accDependencies, projectDependencies) =>
     
     return (!innerAcc[dependency] || innerAcc[dependency] === projectDependencies[dependency])
                 ? Object.assign(innerAcc, {[dependency]:projectDependencies[dependency]})
-                : Object.assign(innerAcc, toSatisfiedDependency(dependency, innerAcc[dependency], projectDeps[dependency]));
+                : Object.assign(innerAcc, toSatisfiedDependency(dependency, innerAcc[dependency], projectDependencies[dependency]));
   }, accDependencies);
 
 }
