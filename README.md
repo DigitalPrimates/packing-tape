@@ -1,7 +1,7 @@
 # packing-tape
 
 ## What is packing-tape
-Simplified workspace for project dependencies living in multiple git repositories.  `packing-tape` will install and hoist all dependencies for a specified set of projects to the top level workspace directory. 
+Simplified workspace for project dependencies living in multiple git repositories.  `packing-tape` will aggregate the dependencies/ devDependencies for all subprojects and inject them into the workspace package.json file.  Once injected `packing-tape`  will install the dependencies, hoisting them to the project level. 
 
 Given a workspace with the following structure:
 
@@ -22,7 +22,7 @@ myWorkspace
 
 ```
 
-running `packing-tape` will install and hoist all dependencies to the workspace level:
+running `packing-tape` will modify the workspace package.json file to include all subproject dependencies.  Once modified `packing-tape` will install and hoist all dependencies to the workspace level.
 
 ```
 myWorkspace
@@ -39,7 +39,7 @@ myWorkspace
 |       |
 |       |___ package.json
 |
-|___ package.json
+|___ package.json (Modified)
 |
 |___ workspace.json
 
@@ -47,6 +47,7 @@ myWorkspace
 
 In the case where multiple projects contain different but compatible versions of a dependency, `packing-tape` will resolve the conflict and install version of the dependency that satisfies both projects.  If the conflict can not be resolved, `packing-tape` will throw an error notifying you of the conflict. 
 
+Note:  When versioning your project, only commit your base package.json config, not the version modified by `packing-tape`.
 
 ## Prerequisites 
 1. Your workspace dir must contain a `workspace.json` that maps `module name` to `module dir`.
