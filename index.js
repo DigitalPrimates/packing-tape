@@ -77,7 +77,7 @@ var toDependenciesGenerator = links => (accDependencies, projectDependencies) =>
 
 }
 
-//todo: refacor toCompleteWorkspaceDependencies in a way that doesnt require us to pass in a filter.
+//todo: refactor toCompleteWorkspaceDependencies in a way that doesnt require us to pass in a filter.
 const toCompleteWorkspaceDependencies = ignoreFilter => packageJsonPathDictionary => {
   
   var dependenciesGenerator = toDependenciesGenerator(packageJsonPathDictionary);
