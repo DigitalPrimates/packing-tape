@@ -186,10 +186,11 @@ const writeToFile = (path, value) => {
 const argv = minimist(process.argv.slice(2));
 
 if (argv.h || argv.help) {
-  console.log('packing-tape [-[w]orkspace=workspace.json] [-[i]gnore=(comma separated list of modules to skip)]');
+  console.log('packing-tape [-[w]orkspace=workspace.json] [-[i]gnore=(comma separated list of modules to skip)] [-[c] use npm ci instead of npm i]');
   process.exit(0);
 }
 
+const shouldCi = !!argv.c;
 const workspaceArg = argv.w || argv.workspace || 'workspace.json';
 const ignoreArg = argv.i || argv.ignore || '';
 const ignoreFilter = package => !ignoreArg.split(',').includes(package);
@@ -213,7 +214,9 @@ const overridePackageJSON = Object.assign({}, workspacePackageJSON, dependencies
 writeToFile(workspacePackage, JSON.stringify(overridePackageJSON, null, 4))
 
 //3. Install the dependencies listed in the package.json
-child_process.execSync('npm i');
+const command = shouldCi ? `npm ci` : `npm i`;
+if (shouldCi) console.log('Performing clean slate (ci) installation.');
+child_process.execSync(command);
 
 //4. Create sym links to the sub projects in node_modules.
 createProjectSymLinks(ignoreFilter)(links);
