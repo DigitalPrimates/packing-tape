@@ -75,6 +75,7 @@ Note:  When versioning your project, only commit your base package.json config, 
 `npm run workspace:install`
 
 ## Optional Arguments
+
 `-[w]orkspace=workspace.json`: specifies the path to the workspace's package.json file.  By default `packing-tape` looks for the package in the main workspace dir.
 
 ```packing-tape -w=configs/workspace.json```
@@ -82,3 +83,7 @@ Note:  When versioning your project, only commit your base package.json config, 
 `-[i]gnore=(comma separated list of modules to skip)`: In the case that you would like to skip modules listed in `workspace.json` as `links` you can use `-i` to indicate the moudles to skip.
 
 ```packing-tape -i=myProjectA,myProjectB```
+
+`-[c] use npm ci instead of npm i'`: Uses the `npm ci` command instead of `npm i`.
+
+```packing-tape -c```
