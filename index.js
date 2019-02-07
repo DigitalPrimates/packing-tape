@@ -77,18 +77,18 @@ var toDependenciesGenerator = links => (accDependencies, projectDependencies) =>
 
 }
 
-const toCompleteWorkspaceDependencies = ignoreFilter => packageDir => {
-    
-  var dependenciesGenerator = toDependenciesGenerator(packageDir);
+//todo: refactor toCompleteWorkspaceDependencies in a way that doesnt require us to pass in a filter.
+const toCompleteWorkspaceDependencies = ignoreFilter => packageJsonPathDictionary => {
+  
+  var dependenciesGenerator = toDependenciesGenerator(packageJsonPathDictionary);
 
   return Object
-    .keys(packageDir)
-    .map(key=>packageDir[key])
+    .keys(packageJsonPathDictionary)
+    .map(key=>packageJsonPathDictionary[key])
     .filter(ignoreFilter)
     .map(dir=>path.resolve(dir, 'package.json'))
     .map(file=>String(fs.readFileSync(file)))
     .map(json=>JSON.parse(json))
-    .map( ({devDependencies, dependencies} ) => ({devDependencies, dependencies}))
     .reduce(({devDependencies={}, dependencies={}}, {devDependencies: projDevDependencies, dependencies:projDependencies})=>{
 
         return {
