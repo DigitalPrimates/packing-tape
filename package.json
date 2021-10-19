@@ -1,6 +1,6 @@
 {
   "name": "@digitalprimates/packing-tape",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Simplified workspace for project dependencies living in multiple git repositories",
   "main": "index.js",
   "bin": {
