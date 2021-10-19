@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/DigitalPrimates/packing-tape#readme",
   "dependencies": {
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.5",
     "semver-intersect": "^1.4.0"
   }
 }

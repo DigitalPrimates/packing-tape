@@ -29,7 +29,7 @@ const toSatisfiedDependency = (dependency, v1, v2) => {
   }
 };
 
-const localProjectFilter = links => 
+const localProjectFilter = (links={}) => 
   Object
     .keys(links)
     .map(link=>dependency=>link!=dependency)
@@ -63,7 +63,7 @@ const validateWorkspace = ignoreFilter => workspace => {
   return true;
 };
 
-var toDependenciesGenerator = links => (accDependencies, projectDependencies) => {
+const toDependenciesGenerator = links => (accDependencies={}, projectDependencies={}) => {
   
   return Object
   .keys(projectDependencies)
@@ -74,13 +74,12 @@ var toDependenciesGenerator = links => (accDependencies, projectDependencies) =>
                 ? Object.assign(innerAcc, {[dependency]:projectDependencies[dependency]})
                 : Object.assign(innerAcc, toSatisfiedDependency(dependency, innerAcc[dependency], projectDependencies[dependency]));
   }, accDependencies);
-
 }
 
 //todo: refactor toCompleteWorkspaceDependencies in a way that doesnt require us to pass in a filter.
 const toCompleteWorkspaceDependencies = ignoreFilter => packageJsonPathDictionary => {
   
-  var dependenciesGenerator = toDependenciesGenerator(packageJsonPathDictionary);
+  const dependenciesGenerator = toDependenciesGenerator(packageJsonPathDictionary);
 
   return Object
     .keys(packageJsonPathDictionary)
